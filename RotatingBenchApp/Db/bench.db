@@ -1,0 +1,71 @@
+record(bi, "$(P)$(R)CHECK_HV") {
+	field(ONAM, "YES")
+	field(ZNAM, "NO")
+	field(DESC, "Power down the CAEN before move?")
+}
+record(ai, "$(P)$(R)HV:DELAY:ON") {
+	field(VAL, "60.0")
+	field(EGU, "s")
+	field(DESC, "Delay for CAEN power up")
+}
+record(ai, "$(P)$(R)HV:DELAY:OFF") {
+	field(VAL, "180.0")
+	field(EGU, "s")
+	field(DESC, "Delay for CAEN power down")
+}
+record(ai, "$(P)$(R)DELAY:RAISE") {
+	field(VAL, "20.0")
+	field(EGU, "s")
+	field(DESC, "Delay for bench raise")
+}
+record(ai, "$(P)$(R)DELAY:LOWER") {
+	field(VAL, "20.0")
+	field(EGU, "s")
+	field(DESC, "Delay for bench lower")
+}
+record(ai, "$(P)$(R)LIMIT:VACUUM:ON") {
+	field(VAL, "20.0")
+	field(EGU, "degree")
+	field(DESC, "Max angle if vacuum on")
+}
+record(ai, "$(P)$(R)LIMIT:VACUUM:OFF") {
+	field(VAL, "135.0")
+	field(EGU, "degree")
+}
+record(ao, "$(P)$(R)ANGLE") {
+	field(SCAN, "1 second")
+	field(OMSL, "closed_loop")
+	field(DOL,  "$(P)$(M).RBV")
+	field(EGU, "degree")
+	field(DESC, "Current angle of bench")
+	field(PREC, "2")
+	info(INTEREST, "HIGH")
+}
+record(ai, "$(P)$(R)ANGLE:SP") {
+	field(EGU, "degree")
+	field(PREC, "2")
+	field(DESC, "Desired angle for bench")
+}
+record(ai, "$(P)$(R)ANGLE:_LAST_SP") {
+	field(EGU, "degree")
+}
+record(ai, "$(P)$(R)ANGLE:SP:RBV") {
+	field(EGU, "degree")
+	field(PREC, "2")
+}
+record(mbbi, "$(P)$(R)STATUS") {
+	field(ZRVL, "0")
+	field(ZRST, "Done")
+	field(ONVL, "1")
+	field(ONST, "HV_going_down")
+	field(TWVL, "2")
+	field(TWST, "Raising_bench")
+	field(THVL, "3")
+	field(THST, "Moving")
+	field(FRVL, "4")
+	field(FRST, "Lowering")
+	field(FVVL, "5")
+	field(FVST, "HV_coming_up")
+	info(INTEREST, "HIGH")
+	field(DESC, "Overall status")
+}
