@@ -1,7 +1,5 @@
 # Put the rotating bench IOC through its paces
 # 
-# NB THIS ASSUMES WE ARE IN SIMULATION MODE!!!!!!!!
-#
 # The only command issued to the RotBench IOC is to set its angle
 # The FINS is put into record simulation mode and raised and lowered as required
 # Everything else is about checking that the expected actions happen
@@ -11,17 +9,29 @@ import os
 import time
 from sys import exit
 
+# NB DO NOT SET sim=True IF TALKING TO REAL HARDWARE - IT WILL BREAK THINGS!
+sim = False
+
 # Raise or lower the bench via record simulation in the FINS
 def bench_rl(state):
-	fins_status_sp_sim.put(state)
-	time.sleep(1)
-	status = fins_status.get(as_string=True)
-	if state==1 and status!='RAISED':
-		print 'Error: FINS not raising on command'
-		exit(0)
-	elif state==0 and status!='LOWERED':
-		print 'Error: FINS not lowering on command'
-		exit(0)
+	expected = 'LOWERED'
+	if state==1:
+		expected = 'RAISED'
+		
+	if sim:
+		# In simulation mode, raise/lower the bench
+		fins_status_sp_sim.put(state)
+		time.sleep(1)
+		status = fins_status.get(as_string=True)
+		if status!=expected:
+			print 'Error: FINS not ' + expected + ' on command'
+			exit(0)
+	else:
+		# Otherwise wait for it to happen
+		status = fins_status.get(as_string=True)
+		while status!=expected:
+			time.sleep(10)
+			status = fins_status.get(as_string=True)
 		
 # Check the FINS was told to do something
 def check_fins_sp(state):
@@ -90,7 +100,10 @@ def test(caen):
 		bench_rl(1)
 		check_status('Moving')
 	elif status=='Moving':
-		print 'Interesting - bench has raised itself'
+		if sim:
+			print 'Interesting - bench has raised itself'
+		else:
+			print 'Moving...'
 	else:
 		print 'Error: should still be Raising but status is ' + status
 		exit(0)
@@ -129,11 +142,17 @@ def test(caen):
 			
 		check_status('Done')
 	elif caen and status=='HV_coming_up':
-		print 'Interesting - bench has lowered itself'
+		if sim:
+			print 'Interesting - bench has lowered itself'
+		else:
+			print 'HV_coming_up...'
 		check_caen('HV_coming_up')
 		check_status('Done')
 	elif not caen and status=='Done':
-		print 'Interesting - bench has lowered itself'
+		if sim:
+			print 'Interesting - bench has lowered itself'
+		else:
+			print 'Done'
 	elif caen:
 		print 'Error: should still be Lowering or HV_coming_up but status is ' + status
 		exit(0)
@@ -151,17 +170,18 @@ fins_status = PV(os.environ['MYPVPREFIX'] + 'BENCH:STATUS')
 rotb_status = PV(os.environ['MYPVPREFIX'] + 'ROTB:STATUS')
 caen_status = PV(os.environ['MYPVPREFIX'] + 'CAEN:hv0:0:0:pwonoff')
 
-# Ensure motor will drive
-motor_spmg = PV(os.environ['MYPVPREFIX'] + 'MOT:MTR0401.SPMG')
-motor_spmg.put("Go")
+if sim:
+	# Ensure motor will drive
+	motor_spmg = PV(os.environ['MYPVPREFIX'] + 'MOT:MTR0401.SPMG')
+	motor_spmg.put("Go")
 
-# Ensure FINS is in simulation mode
-fins_sim = PV(os.environ['MYPVPREFIX'] + 'BENCH:SIM')
-fins_sim.put(1)
+	# Ensure FINS is in simulation mode
+	fins_sim = PV(os.environ['MYPVPREFIX'] + 'BENCH:SIM')
+	fins_sim.put(1)
 
-# Ensure the bench is lowered at the start
-bench_rl(0)
-print 'Fins lowered'
+	# Ensure the bench is lowered at the start
+	bench_rl(0)
+	print 'Fins lowered'
 
 # Check the rotating bench IOC is ready
 status = rotb_status.get(as_string=True)
@@ -175,17 +195,28 @@ elif status!='Done':
 else:
 	print 'RotBench ready'
 
-# Turn off HV checking
-check_pv.put(0)
-caen_status.put(1)
-print 'TEST 1: Move the bench with HV checking turned off'
-test(False)
+if sim:
+	# Turn off HV checking
+	check_pv.put(0)
+	caen_status.put(1)
+	print 'TEST 1: Move the bench with HV checking turned off'
+	test(False)
 
-check_pv.put(1)
-caen_status.put(0)
-print 'TEST 2: Move the bench with HV checking turned on, but HV off'
-test(False)
+	check_pv.put(1)
+	caen_status.put(0)
+	print 'TEST 2: Move the bench with HV checking turned on, but HV off'
+	test(False)
 
-caen_status.put(1)
-print 'TEST 3: Move the bench with HV checking turned on and HV initially on'
-test(True)
+	caen_status.put(1)
+	print 'TEST 3: Move the bench with HV checking turned on and HV initially on'
+	test(True)
+else:
+	if check_pv.get(as_string=True)=='NO':
+		print 'TEST: Moving the bench with HV checking off'
+		test(False)
+	elif caen_status.get(as_string=True)=='Off':
+		print 'TEST: Moving the bench with HV off'
+		test(False)
+	else:
+		print 'TEST: Moving the bench with HV checking on and HV on'
+		test(True)
