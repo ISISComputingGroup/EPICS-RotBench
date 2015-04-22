@@ -40,6 +40,7 @@ record(ao, "$(P)$(R)ANGLE") {
 	field(DESC, "Current angle of bench")
 	field(PREC, "2")
 	info(INTEREST, "HIGH")
+    info(archive, "VAL")
 }
 record(ai, "$(P)$(R)ANGLE:SP") {
 	field(EGU, "degree")
